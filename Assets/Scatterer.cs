@@ -8,14 +8,14 @@ public class Scatterer : MonoBehaviour {
 	// Use this for initialization
 	void Start () {	
 		x1 = new Oscillator(){
-			max = 0.25f,
-			min = -0.25f,
+			max = 0.15f,
+			min = -0.15f,
 			speed = 0.5f
 		};
 
 		y1 = new Oscillator(){
-			max = 0.2f,
-			min = 0.2f,
+			max = 0.15f,
+			min = -0.15f,
 			speed = 0.45f
 		};
 	
