@@ -6,19 +6,14 @@ public class Drawer : BaseControl {
 	public GameObject point; 
 	public Scatterer scatterer; 
 
-	//private bool previousClick;
-	//private float previousX;
-	//private float previousY;
-	private PreviousPoint previousPoint;
-
-	private class PreviousPoint {
-		public float previousX;
-		public float previousY;
-	}
-
+	private bool previousClick;
+	private float previousX;
+	private float previousY;
+	
 	// Use this for initialization
 	void Start () {
 		Screen.sleepTimeout = SleepTimeout.NeverSleep;
+		InitBase(); 
 	}
 	
 	// Update is called once per frame
@@ -26,9 +21,9 @@ public class Drawer : BaseControl {
 		if (IsTouch()){
 			DealWithPrevious();
 			SpawnPoint(lastX, lastY);
-			previousPoint = new PreviousPoint(){ previousX = lastX, previousY = lastY}; 
+			PrepareForNext();
 		} else {
-			previousPoint = null;
+			previousClick = false; 
 		}
 	}
 
@@ -40,11 +35,11 @@ public class Drawer : BaseControl {
 		}
 	}
 
-	//void PrepareForNext(){
-	//	previousClick = true; 
-	//	previousX = lastX;
-	//	previousY = lastY;
-	//}
+	void PrepareForNext(){
+		previousClick = true; 
+		previousX = lastX;
+		previousY = lastY;
+	}
 
 	void SpawnPoint(float x, float y){
 		var go = (GameObject)Instantiate(point);
@@ -61,21 +56,33 @@ public class BaseControl : MonoBehaviour{
 	protected float lastY;
 
 	private bool mouseOn = false;
-
+	private bool touchScreen;
+	
+	protected void InitBase() {
+		touchScreen = Input.touchSupported;
+	}
+	
 	public 	bool IsTouch(){
 		lastX = -1f;
 		lastY = -1f; 
 
-		if (Input.GetMouseButtonDown (0)){
-			mouseOn = !mouseOn; 
-		}
+		if (! touchScreen)
+			return isMouseTouch();
 
-		if (mouseOn){
+		return isPhoneTouch(); 
+	}
+	
+	private bool isMouseTouch(){		
+		if (Input.GetMouseButton(0)){
 			lastX = Input.mousePosition.x;
 			lastY = Input.mousePosition.y; 
 			return true;
 		}
-
+		
+		return false; 
+	}
+	
+	private bool isPhoneTouch(){
 		if (Input.touchCount > 0) {
 			Touch tou = Input.GetTouch(0);
 			lastX = tou.position.x;
