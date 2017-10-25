@@ -9,15 +9,15 @@ public class Drawer : BaseControl {
 	private bool previousClick;
 	private float previousX;
 	private float previousY;
-	
+	private int shares = 5;
 	// Use this for initialization
 	void Start () {
 		Screen.sleepTimeout = SleepTimeout.NeverSleep;
-		InitBase(); 
+
 	}
 	
 	// Update is called once per frame
-	void FixedUpdate () {
+	void Update () {
 		if (IsTouch()){
 			DealWithPrevious();
 			SpawnPoint(lastX, lastY);
@@ -28,12 +28,20 @@ public class Drawer : BaseControl {
 	}
 
 	void DealWithPrevious(){
-		if (previousPoint != null){
-			var shareX = (previousPoint.previousX + lastX)/2.0f;
-			var shareY = (previousPoint.previousY + lastY)/2.0f;
-			SpawnPoint(shareX, shareY);
+		if (previousClick){
+			for (var i =1; i<shares; i++){
+				var shareX = getShare (previousX, lastX, i);
+				var shareY = getShare (previousY, lastY, i);
+				SpawnPoint(shareX, shareY);
+			}
+
 		}
 	}
+
+	float getShare(float first, float second, int step){
+		return first + step*(second - first)/shares;
+	}
+
 
 	void PrepareForNext(){
 		previousClick = true; 
@@ -58,16 +66,14 @@ public class BaseControl : MonoBehaviour{
 	private bool mouseOn = false;
 	private bool touchScreen;
 	
-	protected void InitBase() {
-		touchScreen = Input.touchSupported;
-	}
+
 	
 	public 	bool IsTouch(){
 		lastX = -1f;
 		lastY = -1f; 
 
-		if (! touchScreen)
-			return isMouseTouch();
+		var isMouse = isMouseTouch();
+		if (isMouse) return isMouse; 
 
 		return isPhoneTouch(); 
 	}
