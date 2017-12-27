@@ -5,6 +5,7 @@ using System.Collections;
 public class Scatterer : MonoBehaviour {
 	private Oscillator x1;
 	private Oscillator y1;
+	private Oscillator death;
 	// Use this for initialization
 	void Start () {	
 		x1 = new Oscillator(){
@@ -17,6 +18,12 @@ public class Scatterer : MonoBehaviour {
 			max = 0.15f,
 			min = -0.15f,
 			speed = 0.45f
+		};
+
+		death = new Oscillator(){
+			max = 120000f,
+			min = 60000f,
+			speed = 0.31f
 		};
 	
 	}
@@ -33,6 +40,10 @@ public class Scatterer : MonoBehaviour {
 
 	public float getY(){
 		return y1.GetValue() * 0.5f;
+	}
+
+	public float getDeathTime(){
+		return death.GetValue();
 	}
 }
 

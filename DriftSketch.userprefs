@@ -1,11 +1,11 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Drawer.cs">
+  <MonoDevelop.Ide.Workspace />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scatterer.cs">
     <Files>
-      <File FileName="Assets/Drawer.cs" Line="50" Column="43" />
-      <File FileName="Assets/Floating.cs" Line="30" Column="3" />
-      <File FileName="Assets/Scatterer.cs" Line="18" Column="15" />
-      <File FileName="../HonestToTheBlue/Assets/Oscillator.cs" Line="5" Column="1" />
+      <File FileName="Assets/AudioRecorder.cs" Line="19" Column="3" />
+      <File FileName="Assets/Drawer.cs" Line="78" Column="77" />
+      <File FileName="Assets/Floating.cs" Line="19" Column="24" />
+      <File FileName="Assets/Scatterer.cs" Line="46" Column="27" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

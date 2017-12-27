@@ -8,13 +8,15 @@ public class Floating : MonoBehaviour {
 	private bool started = false;
 	private DateTime lastTime; 
 	private DateTime initTime;
+	private float timeTilDeath = 30000;
 	// Use this for initialization
 	void Start () {
 	}
 
-	public void Init(float x, float y){
+	public void Init(float x, float y, float death){
 		dx = x;
 		dy = y;
+		timeTilDeath = death;
 		lastTime = DateTime.Now;
 		initTime = DateTime.Now;
 		started = true;
@@ -34,7 +36,7 @@ public class Floating : MonoBehaviour {
 	}
 
 	void toKillOrNotToKill(){
-		if ((DateTime.Now - initTime).TotalMilliseconds > 30000){
+		if ((DateTime.Now - initTime).TotalMilliseconds > timeTilDeath){
 			Destroy (this.gameObject); 
 		}
 	}

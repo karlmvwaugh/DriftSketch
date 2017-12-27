@@ -5,11 +5,15 @@ using System.Collections;
 public class Drawer : BaseControl {
 	public GameObject point; 
 	public Scatterer scatterer; 
+	public AudioRecorder recorder;
 
 	private bool previousClick;
 	private float previousX;
 	private float previousY;
 	private int shares = 5;
+
+	private bool currentlyBeingTouched = false;
+
 	// Use this for initialization
 	void Start () {
 		Screen.sleepTimeout = SleepTimeout.NeverSleep;
@@ -19,13 +23,30 @@ public class Drawer : BaseControl {
 	// Update is called once per frame
 	void Update () {
 		if (IsTouch()){
+			RecordingOn();
 			DealWithPrevious();
 			SpawnPoint(lastX, lastY);
 			PrepareForNext();
 		} else {
+			RecordingOff();
 			previousClick = false; 
 		}
 	}
+
+	void RecordingOn(){
+		if (! currentlyBeingTouched){
+			currentlyBeingTouched = true;
+			recorder.StartRecording();
+		}
+	}
+
+	void RecordingOff(){
+		if (currentlyBeingTouched){
+			currentlyBeingTouched = false;
+			recorder.StopRecording(scatterer.getDeathTime());
+		}
+	}
+
 
 	void DealWithPrevious(){
 		if (previousClick){
@@ -54,7 +75,7 @@ public class Drawer : BaseControl {
 		var newCoord = Camera.main.ScreenToWorldPoint(new Vector3(x, y));
 		go.transform.position = new Vector3(newCoord.x, newCoord.y, -1f); 
 		var floating = go.GetComponent<Floating>();
-		floating.Init(scatterer.getX(), scatterer.getY()); 
+		floating.Init(scatterer.getX(), scatterer.getY(), scatterer.getDeathTime()); 
 	}
 }
 
