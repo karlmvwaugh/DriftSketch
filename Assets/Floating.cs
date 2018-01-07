@@ -7,21 +7,26 @@ public class Floating : MonoBehaviour {
 	private float dy; 
 	private bool started = false;
 	private DateTime lastTime; 
-	private DateTime initTime;
+	private DateTime countDownTime;
+	private bool countDownBegun = false;
 	private float timeTilDeath = 30000;
 	// Use this for initialization
 	void Start () {
 	}
 
-	public void Init(float x, float y, float death){
+	public void Init(float x, float y, float death, DateTime batchTime){
 		dx = x;
 		dy = y;
-		timeTilDeath = death;
+		timeTilDeath = death + (float)(DateTime.Now - batchTime).TotalMilliseconds;
 		lastTime = DateTime.Now;
-		initTime = DateTime.Now;
 		started = true;
+
 	}
 
+	public void StartCountDown(){
+		countDownBegun = true;
+		countDownTime = DateTime.Now;
+	}
 
 	// Update is called once per frame
 	void Update () {
@@ -36,7 +41,7 @@ public class Floating : MonoBehaviour {
 	}
 
 	void toKillOrNotToKill(){
-		if ((DateTime.Now - initTime).TotalMilliseconds > timeTilDeath){
+		if (countDownBegun && (DateTime.Now - countDownTime).TotalMilliseconds > timeTilDeath){
 			Destroy (this.gameObject); 
 		}
 	}

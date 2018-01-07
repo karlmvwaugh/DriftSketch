@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 
 public class AudioRecorder : MonoBehaviour {
@@ -8,6 +9,7 @@ public class AudioRecorder : MonoBehaviour {
 	private AudioSource currentAudioSource; 
 	private AudioDecay currentAudioDecay;
 	private bool playWhilstRecording = false;
+	private DateTime batchTime;
 
 	// Use this for initialization
 	void Start () {
@@ -19,10 +21,12 @@ public class AudioRecorder : MonoBehaviour {
 	
 	}
 
-	public void StartRecording ()
+	public void StartRecording (DateTime _batchTime)
 	{
 		if (_recording) return;
 		_recording = true;
+
+		batchTime = _batchTime;
 
 		CreateNewPlayer();
 
@@ -41,12 +45,12 @@ public class AudioRecorder : MonoBehaviour {
 	}
 
 
-	public void StopRecording (float fadeTime)
+	public AudioDecay StopRecording (float fadeTime)
 	{
 		if ((! (Microphone.GetPosition("") > 0)) || (! Microphone.IsRecording("")))
 		{
 			_recording = false;
-			return;
+			return null;
 		}
 		//ThisAudio.Stop();
 		
@@ -63,10 +67,12 @@ public class AudioRecorder : MonoBehaviour {
 			currentAudioSource.volume = 1f;
 			currentAudioSource.pitch = 1f;
 			currentAudioSource.Play();
-			currentAudioDecay.Init(fadeTime);
+			currentAudioDecay.Init(fadeTime, batchTime);
 
 		}
 		_recording = false;
+
+		return currentAudioDecay;
 	}
 
 	private AudioClip TrimAndAdjust(AudioClip recordedClip, int position){
