@@ -1,11 +1,11 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Drawer.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/AudioDecay.cs">
     <Files>
       <File FileName="Assets/Drawer.cs" Line="148" Column="40" />
       <File FileName="Assets/Floating.cs" Line="26" Column="2" />
-      <File FileName="Assets/Scatterer.cs" Line="34" Column="16" />
-      <File FileName="Assets/AudioDecay.cs" Line="57" Column="23" />
+      <File FileName="Assets/Scatterer.cs" Line="27" Column="5" />
+      <File FileName="Assets/AudioDecay.cs" Line="57" Column="14" />
       <File FileName="Assets/AudioRecorder.cs" Line="75" Column="27" />
     </Files>
   </MonoDevelop.Ide.Workbench>

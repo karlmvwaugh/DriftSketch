@@ -12,6 +12,13 @@ public class Drawer : BaseControl {
 	private bool previousClick;
 	private float previousX;
 	private float previousY;
+	private float previousXDrift;
+	private float previousYDrift;
+	private float previousDeathTime;
+	private float currentXDrift;
+	private float currentYDrift;
+	private float currentDeathTime;
+
 	private int shares = 5;
 
 	private CommonTimer commonTimer = new CommonTimer();
@@ -19,6 +26,14 @@ public class Drawer : BaseControl {
 	private DateTime currentBatchTime;
 
 	private bool currentlyBeingTouched = false;
+
+	private DateTime currentFrameTime;
+	private DateTime previousFrameTime;
+
+
+	private bool currentlyRecording = false;
+	private AudioDecay currentAudioSource = null;
+	private DateTime startedRecordingTime;
 
 	// Use this for initialization
 	void Start () {
@@ -30,9 +45,18 @@ public class Drawer : BaseControl {
 	void Update () {
 		if (IsTouch()){
 			RecordingOn();
+			currentXDrift = scatterer.getX();
+			currentYDrift = scatterer.getY();
+			currentDeathTime = scatterer.getDeathTime();
+			currentFrameTime = DateTime.Now;
 			DealWithPrevious();
-			SpawnPoint(lastX, lastY);
+
+			var currentTimeDiff = (float)(currentFrameTime - currentBatchTime).TotalMilliseconds;
+			SpawnPoint(lastX, lastY, currentXDrift, currentYDrift, currentDeathTime, currentTimeDiff);
+
 			PrepareForNext();
+
+			DoWeNeedToStopRecording();
 		} else {
 			RecordingOff();
 			previousClick = false; 
@@ -44,19 +68,38 @@ public class Drawer : BaseControl {
 			currentlyBeingTouched = true;
 			currentBatchTime = DateTime.Now; 
 
-			recorder.StartRecording(currentBatchTime);
+			if (! currentlyRecording){
+				recorder.StartRecording(currentBatchTime);
+				currentlyRecording = true;
+				startedRecordingTime = DateTime.Now;
+			}
 		}
 	}
 
 	void RecordingOff(){
 		if (currentlyBeingTouched){
 			currentlyBeingTouched = false;
-			var audioSource = recorder.StopRecording(scatterer.getDeathTime());
 
-			commonTimer.AddBatch(currentBatch, audioSource);
+			if (currentlyRecording){
+				currentAudioSource = recorder.StopRecording(scatterer.getDeathTime());
+				currentlyRecording = false;
+			}
+
+			commonTimer.AddBatch(currentBatch, currentAudioSource);
 			currentBatch = new List<Floating>(); 
 		}
+	} 
+
+	void DoWeNeedToStopRecording(){
+		if (currentlyRecording){
+			var now = DateTime.Now;
+			if ( (now - startedRecordingTime).TotalSeconds > 50){
+				currentAudioSource = recorder.StopRecording(scatterer.getDeathTime());
+				currentlyRecording = false;
+			}
+		}
 	}
+
 
 
 	void DealWithPrevious(){
@@ -64,7 +107,15 @@ public class Drawer : BaseControl {
 			for (var i =1; i<shares; i++){
 				var shareX = getShare (previousX, lastX, i);
 				var shareY = getShare (previousY, lastY, i);
-				SpawnPoint(shareX, shareY);
+				var shareXDrift = getShare(previousXDrift, currentXDrift, i);
+				var shareYDrift = getShare(previousYDrift, currentYDrift, i);
+				var shareDeathTime = getShare(previousDeathTime, currentDeathTime, i);
+
+				var previousTimeDiff = (float)(previousFrameTime - currentBatchTime).TotalMilliseconds;
+				var currentTimeDiff = (float)(currentFrameTime - currentBatchTime).TotalMilliseconds;
+				var shareTimeDiff = getShare(previousTimeDiff, currentTimeDiff, i);
+
+				SpawnPoint(shareX, shareY, shareXDrift, shareYDrift, shareDeathTime, shareTimeDiff);
 			}
 
 		}
@@ -79,14 +130,18 @@ public class Drawer : BaseControl {
 		previousClick = true; 
 		previousX = lastX;
 		previousY = lastY;
+		previousXDrift = currentXDrift;
+		previousYDrift = currentYDrift;
+		previousDeathTime = currentDeathTime;
+		previousFrameTime = currentFrameTime;
 	}
 
-	void SpawnPoint(float x, float y){
+	void SpawnPoint(float x, float y, float xDrift, float yDrift, float deathTime, float timeDiff){
 		var go = (GameObject)Instantiate(point);
 		var newCoord = Camera.main.ScreenToWorldPoint(new Vector3(x, y));
 		go.transform.position = new Vector3(newCoord.x, newCoord.y, -1f); 
 		var floating = go.GetComponent<Floating>();
-		floating.Init(scatterer.getX(), scatterer.getY(), scatterer.getDeathTime(), currentBatchTime); 
+		floating.Init(xDrift, yDrift, deathTime, timeDiff); 
 
 		currentBatch.Add(floating);
 	}
@@ -148,27 +203,51 @@ public class CommonTimer {
 	private int countOfConstantMembers = 5;
 	private List<ActivePair> everythingActive = new List<ActivePair>();
 
+	private Queue<ActivePair> everythingQ = new Queue<ActivePair>();
+
 	public void AddBatch(List<Floating> incomingList, AudioDecay source){
-		everythingActive.Add(new ActivePair(){
+		/*everythingActive.Add(new ActivePair(){
 			activePoints = incomingList,
 			activeAudio = source
 		}  );
 
-		if (everythingActive.Count > countOfConstantMembers){
+if (everythingActive.Count > countOfConstantMembers){
 			popAndTrigger();
 		}
-	}
+		 */
 
-	private void popAndTrigger(){
-		var current = everythingActive.First();
+		everythingQ.Enqueue(new ActivePair(){
+			activePoints = incomingList,
+			activeAudio = source
+		});
 
-		foreach(var floating in current.activePoints){
-			floating.StartCountDown();
+		if (everythingQ.Count > countOfConstantMembers){
+			trigger(everythingQ.Dequeue());
 		}
 
-		current.activeAudio.StartCountDown();
+	}
+
+	/*private void popAndTrigger(){
+		var current = everythingActive.First();
+
+		trigger(current);
+
 
 		everythingActive.RemoveAt(0);
+	}*/
+
+	private void trigger(ActivePair current){
+		if (current == null) return;
+
+		if (current.activePoints != null){
+			foreach(var floating in current.activePoints){
+				floating.StartCountDown();
+			}
+		}
+		
+		if (current.activeAudio != null){
+			current.activeAudio.StartCountDown();
+		}
 	}
 
 	public class ActivePair {

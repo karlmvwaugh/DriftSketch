@@ -54,7 +54,7 @@ public class AudioDecay : MonoBehaviour {
 		pitchOsc = new Oscillator(){
 			max = 1f,
 			min = 0.1f,
-			speed = 1000f/fadeTime //
+			speed = 200f/fadeTime //
 		};
 
 		pitchOsc.SetToStartAtTop();

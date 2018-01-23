@@ -21,10 +21,17 @@ public class Scatterer : MonoBehaviour {
 		};
 
 		death = new Oscillator(){
-			max = 120000f,
-			min = 60000f,
+			max = 60000f,
+			min = 30000f,
 			speed = 0.0516f
 		};
+
+
+		/*death = new Oscillator(){
+			max = 6000f,
+			min = 3000f,
+			speed = 0.0516f
+		};*/
 	}
 	
 	// Update is called once per frame

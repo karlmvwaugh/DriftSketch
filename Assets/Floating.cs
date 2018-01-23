@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 
+
 public class Floating : MonoBehaviour {
 	private float dx;
 	private float dy; 
@@ -14,10 +15,12 @@ public class Floating : MonoBehaviour {
 	void Start () {
 	}
 
-	public void Init(float x, float y, float death, DateTime batchTime){
+	public void Init(float x, float y, float death, float timeDiff){
 		dx = x;
 		dy = y;
-		timeTilDeath = death + (float)(DateTime.Now - batchTime).TotalMilliseconds;
+		timeTilDeath = death + timeDiff;
+		var rot = randomRotation();
+		transform.Rotate(Vector3.forward * rot); 
 		lastTime = DateTime.Now;
 		started = true;
 
@@ -46,10 +49,40 @@ public class Floating : MonoBehaviour {
 		}
 	}
 
+	private int randomRotation(){
+		var r = new System.Random();
+		return r.Next(0, 360);
+	}
 
 	void updatePosition(float timePassed){
 		var old = transform.position;
-		transform.position = new Vector3(old.x + dx*timePassed/1000f, old.y + dy*timePassed/1000f, old.z);
+		transform.position = new Vector3(newX(old, timePassed), newY (old, timePassed), old.z);
+	}
+
+	float newX(Vector3 old, float timePassed){
+		var newX = old.x + dx*timePassed/1000f;
+
+		newX = wrapAroundAt(newX, 12.5f);
+
+		return newX;
+	}
+
+	float newY(Vector3 old, float timePassed){
+		var newY = old.y + dy*timePassed/1000f;
+		newY = wrapAroundAt(newY, 6.25f);
+		return newY;
+	}
+
+	float wrapAroundAt(float inValue, float wrapValue){
+		if (inValue >= wrapValue){
+			inValue = -1f*wrapValue + (inValue - wrapValue);
+		}
+		
+		if (inValue <= -1f*wrapValue){
+			inValue = wrapValue + (inValue + wrapValue);
+		}
+
+		return inValue;
 	}
 
 	float GetDifference(){
