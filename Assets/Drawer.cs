@@ -10,14 +10,6 @@ public class Drawer : BaseControl {
 	public AudioRecorder recorder;
 
 	private bool previousClick;
-	private float previousX;
-	private float previousY;
-	private float previousXDrift;
-	private float previousYDrift;
-	private float previousDeathTime;
-	private float currentXDrift;
-	private float currentYDrift;
-	private float currentDeathTime;
 
 	private int shares = 5;
 
@@ -27,32 +19,32 @@ public class Drawer : BaseControl {
 
 	private bool currentlyBeingTouched = false;
 
-	private DateTime currentFrameTime;
-	private DateTime previousFrameTime;
-
-
 	private bool currentlyRecording = false;
 	private AudioDecay currentAudioSource = null;
 	private DateTime startedRecordingTime;
 
+	private ValueMemory valueMemory;
+
 	// Use this for initialization
 	void Start () {
 		Screen.sleepTimeout = SleepTimeout.NeverSleep;
-
+		valueMemory = new ValueMemory(shares); 
+		valueMemory.InputValue("xDrift", scatterer.getX);
+		valueMemory.InputValue("yDrift", scatterer.getY);
+		valueMemory.InputValue("death", scatterer.getDeathTime);
+		valueMemory.InputValue("timeDiff", () => (float)(DateTime.Now - currentBatchTime).TotalMilliseconds);
+		valueMemory.InputValue("x", () => lastX);
+		valueMemory.InputValue("y", () => lastY);
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		if (IsTouch()){
 			RecordingOn();
-			currentXDrift = scatterer.getX();
-			currentYDrift = scatterer.getY();
-			currentDeathTime = scatterer.getDeathTime();
-			currentFrameTime = DateTime.Now;
+			valueMemory.SetCurrent();
 			DealWithPrevious();
 
-			var currentTimeDiff = (float)(currentFrameTime - currentBatchTime).TotalMilliseconds;
-			SpawnPoint(lastX, lastY, currentXDrift, currentYDrift, currentDeathTime, currentTimeDiff);
+			SpawnPoint(lastX, lastY, valueMemory.GetCurrent("xDrift"), valueMemory.GetCurrent("yDrift"), valueMemory.GetCurrent("death"), valueMemory.GetCurrent("timeDiff"));
 
 			PrepareForNext();
 
@@ -69,9 +61,11 @@ public class Drawer : BaseControl {
 			currentBatchTime = DateTime.Now; 
 
 			if (! currentlyRecording){
-				recorder.StartRecording(currentBatchTime);
-				currentlyRecording = true;
-				startedRecordingTime = DateTime.Now;
+				var success = recorder.StartRecording(currentBatchTime);
+				if (success) {
+					currentlyRecording = true;
+					startedRecordingTime = DateTime.Now;
+				}
 			}
 		}
 	}
@@ -100,40 +94,29 @@ public class Drawer : BaseControl {
 		}
 	}
 
-
-
 	void DealWithPrevious(){
 		if (previousClick){
 			for (var i =1; i<shares; i++){
-				var shareX = getShare (previousX, lastX, i);
-				var shareY = getShare (previousY, lastY, i);
-				var shareXDrift = getShare(previousXDrift, currentXDrift, i);
-				var shareYDrift = getShare(previousYDrift, currentYDrift, i);
-				var shareDeathTime = getShare(previousDeathTime, currentDeathTime, i);
-
-				var previousTimeDiff = (float)(previousFrameTime - currentBatchTime).TotalMilliseconds;
-				var currentTimeDiff = (float)(currentFrameTime - currentBatchTime).TotalMilliseconds;
-				var shareTimeDiff = getShare(previousTimeDiff, currentTimeDiff, i);
-
-				SpawnPoint(shareX, shareY, shareXDrift, shareYDrift, shareDeathTime, shareTimeDiff);
+				SpawnMidPoint(i);
 			}
-
 		}
 	}
 
-	float getShare(float first, float second, int step){
-		return first + step*(second - first)/shares;
+	void SpawnMidPoint(int i){
+		var shareX = valueMemory.GetShare("x", i);
+		var shareY = valueMemory.GetShare("y", i);
+		var shareXDrift = valueMemory.GetShare("xDrift", i);
+		var shareYDrift = valueMemory.GetShare("yDrift", i);
+		var shareDeathTime = valueMemory.GetShare("death", i);
+		var shareTimeDiff = valueMemory.GetShare("timeDiff", i);
+		
+		SpawnPoint(shareX, shareY, shareXDrift, shareYDrift, shareDeathTime, shareTimeDiff);
 	}
-
-
+	
+	
 	void PrepareForNext(){
 		previousClick = true; 
-		previousX = lastX;
-		previousY = lastY;
-		previousXDrift = currentXDrift;
-		previousYDrift = currentYDrift;
-		previousDeathTime = currentDeathTime;
-		previousFrameTime = currentFrameTime;
+		valueMemory.RememberValues();
 	}
 
 	void SpawnPoint(float x, float y, float xDrift, float yDrift, float deathTime, float timeDiff){
@@ -151,11 +134,8 @@ public class Drawer : BaseControl {
 public class BaseControl : MonoBehaviour{
 	protected float lastX;
 	protected float lastY;
-
 	private bool mouseOn = false;
 	private bool touchScreen;
-	
-
 	
 	public 	bool IsTouch(){
 		lastX = -1f;
@@ -188,34 +168,56 @@ public class BaseControl : MonoBehaviour{
 		return false;
 	}
 	
-	
 	void Start(){}
 	
 	void Update(){}
-	
-	
 }
 
+public class ValueMemory{
+	private Dictionary<string, Func<float>> funcs;
+	private Dictionary<string, float> previousValues;
+	private Dictionary<string, float> currentValues;
+	private int _shares;
 
+	public ValueMemory(int shares){
+		_shares = shares;
+		funcs = new Dictionary<string, Func<float>>();
+		previousValues = new Dictionary<string, float>();
+		currentValues = new Dictionary<string, float>();
+	}
+	public void InputValue(string name, Func<float> Func){
+		funcs[name] = Func;
+	}
+
+	public void SetCurrent(){
+		foreach(var kvp in funcs){
+			currentValues[kvp.Key] = kvp.Value();
+		}
+	}
+
+	public void RememberValues(){
+		foreach(var kvp in currentValues){
+			previousValues[kvp.Key] = kvp.Value;
+		}
+	}
+
+	public float GetShare(string name, int step){
+		var first = previousValues[name];
+		var second = currentValues[name];
+		return first + step*(second - first)/_shares;
+	}
+
+	public float GetCurrent(string name){
+		return currentValues[name];
+	}
+}
 
 public class CommonTimer {
-
 	private int countOfConstantMembers = 5;
 	private List<ActivePair> everythingActive = new List<ActivePair>();
-
 	private Queue<ActivePair> everythingQ = new Queue<ActivePair>();
 
 	public void AddBatch(List<Floating> incomingList, AudioDecay source){
-		/*everythingActive.Add(new ActivePair(){
-			activePoints = incomingList,
-			activeAudio = source
-		}  );
-
-if (everythingActive.Count > countOfConstantMembers){
-			popAndTrigger();
-		}
-		 */
-
 		everythingQ.Enqueue(new ActivePair(){
 			activePoints = incomingList,
 			activeAudio = source
@@ -224,17 +226,7 @@ if (everythingActive.Count > countOfConstantMembers){
 		if (everythingQ.Count > countOfConstantMembers){
 			trigger(everythingQ.Dequeue());
 		}
-
 	}
-
-	/*private void popAndTrigger(){
-		var current = everythingActive.First();
-
-		trigger(current);
-
-
-		everythingActive.RemoveAt(0);
-	}*/
 
 	private void trigger(ActivePair current){
 		if (current == null) return;
@@ -254,5 +246,4 @@ if (everythingActive.Count > countOfConstantMembers){
 		public List<Floating> activePoints;
 		public AudioDecay activeAudio;
 	}
-
 }

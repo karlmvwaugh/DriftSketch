@@ -6,62 +6,68 @@ public class AudioRecorder : MonoBehaviour {
 	private AudioClip audioClip;
 	private bool _recording;
 	public GameObject audioGameObject;
+	public MicSelector micSelector;
 	private AudioSource currentAudioSource; 
 	private AudioDecay currentAudioDecay;
 	private bool playWhilstRecording = false;
 	private DateTime batchTime;
-
+	private string micName;
 	// Use this for initialization
 	void Start () {
-	
 	}
 	
 	// Update is called once per frame
 	void Update () {
-	
 	}
 
-	public void StartRecording (DateTime _batchTime)
-	{
-		if (_recording) return;
+	public bool StartRecording (DateTime _batchTime)
+	{	
+		if (_recording) return false;
 		_recording = true;
-
+		
+		micName = micSelector.GetMicName();
+		
 		batchTime = _batchTime;
-
+		
 		CreateNewPlayer();
-
-		audioClip = Microphone.Start("", false, 60, 44100);
-			
-
+		try {
+			audioClip = Microphone.Start(micName, false, 60, 44100);
+		}
+		catch (Exception e) {
+			_recording = false;
+			return false; 
+		}
 		
 		if (audioClip != null && playWhilstRecording){
 			currentAudioSource.clip = audioClip;
 			currentAudioSource.volume = 1f;
 			currentAudioSource.pitch = 1f;
 			currentAudioSource.Play();
-
+			
 		}
-		
+		return true; 
 	}
 
 
 	public AudioDecay StopRecording (float fadeTime)
 	{
-		if ((! (Microphone.GetPosition("") > 0)) || (! Microphone.IsRecording("")))
+		if (_recording == false){
+			return null;
+		}
+
+		if ((! (Microphone.GetPosition(micName) > 0)) || (! Microphone.IsRecording(micName)))
 		{
 			_recording = false;
 			return null;
 		}
-		//ThisAudio.Stop();
-		
-		var position = Microphone.GetPosition("");
-		while(Microphone.GetPosition("") == position){}
-		Microphone.End (""); 
-		while(Microphone.IsRecording("")){}
+
+		var position = Microphone.GetPosition(micName);
+		while(Microphone.GetPosition(micName) == position){}
+		Microphone.End (micName); 
+		while(Microphone.IsRecording(micName)){}
 
 		audioClip = TrimAndAdjust(audioClip, position); 
 
-		
 		if (audioClip != null){
 			currentAudioSource.clip = audioClip;
 			currentAudioSource.volume = 1f;
@@ -110,6 +116,4 @@ public class AudioRecorder : MonoBehaviour {
 		currentAudioSource = go.GetComponent<AudioSource>();
 		currentAudioDecay = go.GetComponent<AudioDecay>();
 	}
-
-
 }

@@ -23,7 +23,6 @@ public class Floating : MonoBehaviour {
 		transform.Rotate(Vector3.forward * rot); 
 		lastTime = DateTime.Now;
 		started = true;
-
 	}
 
 	public void StartCountDown(){
